@@ -16,7 +16,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 # Custom CSS for Northwestern branding and better UI
 st.markdown(f"""
 <style>
@@ -124,8 +123,12 @@ st.markdown(f"""
 # Load participant data
 @st.cache_data
 def load_data():
-    df = pd.read_csv("participants.tsv", sep="\t")
+    df = pd.read_csv("/projects/p32576/QC/Denoise_norm/Modified_file_name_fina/dashboard/participants.tsv", sep="\t")
+    
+    # Extract city code (first 3 letters) and participant ID (full ID)
     df["city_code"] = df["id_number"].astype(str).apply(lambda x: re.match(r"([A-Z]+)", x).group(1) if re.match(r"([A-Z]+)", x) else None)
+    df["participant_id"] = df["id_number"].astype(str)  # Keep full participant ID
+    
     df["age"] = df["ss_child_chronological_age"].astype(str).apply(
         lambda x: float(x.split(" ")[0]) + float(x.split(" ")[2])/12 if "years" in x and "months" in x else None
     )
@@ -157,9 +160,14 @@ city_coords = {
     "Orlando, FL": (28.5383, -81.3792),
     "St. Louis, MO": (38.6270, -90.1994)
 }
-city_df = df["City"].value_counts().rename_axis("City").reset_index(name="Count")
-city_df["lat"] = city_df["City"].map(lambda x: city_coords.get(x, (0, 0))[0])
-city_df["lon"] = city_df["City"].map(lambda x: city_coords.get(x, (0, 0))[1])
+
+# FIXED: Count unique participants per city instead of total files
+city_participant_counts = df.groupby("City")["participant_id"].nunique().reset_index()
+city_participant_counts.columns = ["City", "Participant_Count"]
+
+# Add coordinates for mapping
+city_participant_counts["lat"] = city_participant_counts["City"].map(lambda x: city_coords.get(x, (0, 0))[0])
+city_participant_counts["lon"] = city_participant_counts["City"].map(lambda x: city_coords.get(x, (0, 0))[1])
 
 # Header Section
 st.markdown(f"""
@@ -169,12 +177,13 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# KPI Cards with improved styling
+# FIXED: Updated KPI Cards to show unique participant counts
 st.markdown('<div class="section-header"> Key Metrics</div>', unsafe_allow_html=True)
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Total Participants", f"{len(df):,}", help="Total number of participants across all cities")
+    unique_participants = df["participant_id"].nunique()
+    st.metric("Total Participants", f"{unique_participants:,}", help="Total number of unique participants across all cities")
 with col2:
     st.metric("Active Cities", f"{df['City'].nunique()}", help="Number of cities with participants")
 with col3:
@@ -184,89 +193,172 @@ with col4:
     age_range = df["age"].max() - df["age"].min()
     st.metric("Age Range", f"{age_range:.1f} years", help="Range between oldest and youngest participant")
 
-# Enhanced US Map with larger size
-st.markdown('<div class="section-header"> Geographic Distribution</div>', unsafe_allow_html=True)
 
 # Create custom color scale for Northwestern branding
-fig_map = go.Figure()
+# --- New Choropleth Map Matching SEED Expansion Style ---
+st.markdown('<div class="section-header"> Geographic Distribution</div>', unsafe_allow_html=True)
 
-# Add scatter geo with custom styling
-fig_map.add_trace(go.Scattergeo(
-    lon=city_df["lon"],
-    lat=city_df["lat"],
-    text=city_df["City"],
-    mode='markers+text',
-    marker=dict(
-        size=city_df["Count"] * 3,  # Larger markers
-        color=city_df["Count"],
-        colorscale=[[0, NU_LIGHT_PURPLE], [1, NU_PURPLE]],
-        line=dict(width=2, color='white'),
-        sizemode='diameter',
-        opacity=0.8,
-        colorbar=dict(
-            title=dict(
-                text="Participant Count",
-                font=dict(color=NU_PURPLE)
-            ),
-            tickfont=dict(color=NU_PURPLE)
-        )
-    ),
-    textposition="top center",
-    textfont=dict(size=12, color=NU_PURPLE, family="Arial Black"),
-    hovertemplate="<b>%{text}</b><br>Participants: %{marker.size}<extra></extra>"
+# Define US Census regions and colors
+region_colors = {
+    'West': '#FFA500',       # Orange
+    'Midwest': '#228B22',    # Green
+    'South': '#1E90FF',      # Blue
+    'Northeast': '#FF0000'   # Red
+}
+
+# Map each state to a Census region
+state_region_map = {
+    # WEST
+    'WA': 'West', 'OR': 'West', 'CA': 'West', 'NV': 'West', 'ID': 'West', 
+    'MT': 'West', 'WY': 'West', 'UT': 'West', 'CO': 'West', 'AK': 'West', 'HI': 'West',
+
+    # MIDWEST
+    'ND': 'Midwest', 'SD': 'Midwest', 'NE': 'Midwest', 'KS': 'Midwest', 
+    'MN': 'Midwest', 'IA': 'Midwest', 'MO': 'Midwest',
+    'WI': 'Midwest', 'IL': 'Midwest', 'IN': 'Midwest', 'OH': 'Midwest', 'MI': 'Midwest',
+
+    # SOUTH
+    'DE': 'South', 'MD': 'South', 'VA': 'South', 'WV': 'South', 'NC': 'South', 'SC': 'South', 
+    'GA': 'South', 'FL': 'South', 'KY': 'South', 'TN': 'South', 'MS': 'South', 'AL': 'South', 
+    'OK': 'South', 'TX': 'South', 'AR': 'South', 'LA': 'South',
+
+    # NORTHEAST
+    'ME': 'Northeast', 'NH': 'Northeast', 'VT': 'Northeast', 'MA': 'Northeast', 'RI': 'Northeast', 
+    'CT': 'Northeast', 'NY': 'Northeast', 'PA': 'Northeast', 'NJ': 'Northeast'
+}
+
+# Create DataFrame for Plotly
+df_map = pd.DataFrame({
+    'state': list(state_region_map.keys()),
+    'region': list(state_region_map.values())
+})
+df_map['color'] = df_map['region'].map(region_colors)
+
+# Create base choropleth map
+fig_map = go.Figure(go.Choropleth(
+    locations=df_map['state'],
+    locationmode='USA-states',
+    z=df_map['region'].astype('category').cat.codes,
+    text=df_map['region'],
+    colorscale=[[0, '#FFA500'], [0.33, '#1E90FF'], [0.66, '#228B22'], [1, '#FF0000']],
+    showscale=False,
+    marker_line_color='white',
+    marker_line_width=1
 ))
 
+# ✅ Use the existing city_participant_counts DataFrame for consistency
+highlight_coords = {
+    "Los Angeles, CA": (-118.2437, 34.0522),
+    "Dallas, TX": (-96.7970, 32.7767),
+    "Atlanta, GA": (-84.3880, 33.7490),
+    "Orlando, FL": (-81.3792, 28.5383),
+    "Chicago, IL": (-87.6298, 41.8781),
+    "St. Louis, MO": (-90.1994, 38.6270),
+    "New York, NY": (-74.0060, 40.7128),
+    "Baltimore, MD": (-76.6122, 39.2904)
+}
+
+# Filter the DataFrame for our 8 highlight cities
+highlight_df = city_participant_counts.copy()
+highlight_df = highlight_df[highlight_df['City'].isin(highlight_coords.keys())]
+
+# Prepare hover + text labels
+highlight_df['label'] = highlight_df.apply(
+    lambda x: f"{x['City']}<br>{x['Participant_Count']} participants", axis=1
+)
+highlight_df['lon'] = highlight_df['City'].map(lambda c: highlight_coords[c][0])
+highlight_df['lat'] = highlight_df['City'].map(lambda c: highlight_coords[c][1])
+
+# Add city markers with rings and labels
+fig_map.add_trace(go.Scattergeo(
+    lon=highlight_df['lon'],
+    lat=highlight_df['lat'],
+    mode='markers+text',
+    marker=dict(
+        size=20,
+        color='rgba(0,0,0,0)',
+        line=dict(width=3, color='black')
+    ),
+    text=highlight_df['label'],
+    textposition="bottom center",
+    textfont=dict(size=12, color="black", family="Arial Black"),
+    hoverinfo='text'
+))
+
+# Configure map layout
 fig_map.update_layout(
-    title={
-        'text': "Participant Distribution Across Study Sites",
-        'x': 0.5,
-        'xanchor': 'center',
-        'font': {'size': 20, 'color': NU_PURPLE, 'family': "Arial"}
-    },
     geo=dict(
         scope='usa',
         projection_type='albers usa',
         showland=True,
         landcolor='rgb(243, 243, 243)',
-        coastlinecolor='rgb(204, 204, 204)',
-        showlakes=True,
         lakecolor='rgb(255, 255, 255)',
-        showsubunits=True,
-        subunitcolor='rgb(217, 217, 217)',
-        countrycolor='rgb(217, 217, 217)',
-        showframe=False,
         bgcolor='rgba(0,0,0,0)'
     ),
-    height=600,  
+    title=dict(
+        text="Expanding the SEED - US Census Regions",
+        x=0.5,
+        font=dict(size=20, color=NU_PURPLE)
+    ),
     margin=dict(l=0, r=0, t=50, b=0),
     paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)'
+    plot_bgcolor='rgba(0,0,0,0)',
+    height=600
 )
 
 st.plotly_chart(fig_map, use_container_width=True)
 
+# Display participant count summary table
+st.markdown('<div class="section-header">Participant Count by City</div>', unsafe_allow_html=True)
+
+# Create a summary table showing the participant counts
+participant_summary = city_participant_counts[["City", "Participant_Count"]].copy()
+participant_summary.columns = ["City", "Number of Participants"]
+participant_summary = participant_summary.sort_values("Number of Participants", ascending=False)
+
+st.dataframe(
+    participant_summary,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        'City': st.column_config.TextColumn('City', width="large"),
+        'Number of Participants': st.column_config.NumberColumn('Number of Participants', width="medium")
+    }
+)
+
 # Age Distribution with Northwestern colors
+# Age Distribution using scatter plot with full labels
 st.markdown('<div class="section-header"> Age Demographics</div>', unsafe_allow_html=True)
 
-fig_age = px.histogram(
-    df, 
-    x="age", 
-    nbins=20, 
-    title="Age Distribution of Participants",
+# Parse age string into numeric and full label
+df["numeric_age"] = df["ss_child_chronological_age"].astype(str).apply(
+    lambda x: float(x.split(" ")[0]) + float(x.split(" ")[2])/12 if "years" in x and "months" in x else None
+)
+df["age_label"] = df["ss_child_chronological_age"].astype(str)
+
+fig_age_scatter = px.scatter(
+    df,
+    x=df.index,
+    y="numeric_age",
+    hover_name="participant_id",
+    hover_data={"numeric_age": False, "age_label": True},
+    labels={"numeric_age": "Age"},
+    title="Child Age Distribution (Hover to See Age Format: e.g., 4 years 2 months)",
     color_discrete_sequence=[NU_PURPLE]
 )
-fig_age.update_layout(
+
+fig_age_scatter.update_layout(
     title_font=dict(size=18, color=NU_PURPLE, family="Arial"),
-    xaxis_title="Age (Years)",
-    yaxis_title="Number of Participants",
-    showlegend=False,
+    xaxis_title="Participant Index",
+    yaxis_title="Age (Years)",
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)',
-    font=dict(color=NU_PURPLE)
+    font=dict(color=NU_PURPLE),
+    height=400,
+    showlegend=False
 )
-fig_age.update_traces(opacity=0.8)
 
-st.plotly_chart(fig_age, use_container_width=True)
+st.plotly_chart(fig_age_scatter, use_container_width=True)
 
 # Demographic Group with better styling
 if "ss_demographic_groups" in df.columns:
@@ -296,10 +388,98 @@ if "ss_demographic_groups" in df.columns:
     
     st.plotly_chart(fig_demo, use_container_width=True)
 
+# Child Race Distribution
+# Child Race Distribution (handling multiple race codes per participant)
+# --- Child Race Distribution + Hispanic / Latine ---
+# Child Race Distribution (handling multiple race codes per participant)
+if "ss_child_race" in df.columns:
+    st.markdown('<div class="section-header">Child Race & Ethnicity Distribution</div>', unsafe_allow_html=True)
+
+    # Map race codes to names
+    race_mapping = {
+        "1": "American Indian or Alaska Native",
+        "2": "Asian",
+        "3": "Black or African American",
+        "4": "Middle Eastern or North African",
+        "5": "Native Hawaiian or Other Pacific Islander",
+        "6": "Caucasian",
+        "7": "Other"
+    }
+
+    # Handle multiple race codes like "1,6"
+    race_series = df["ss_child_race"].dropna().astype(str)
+    expanded_races = race_series.str.split(",", expand=True).stack().reset_index(drop=True)
+    expanded_races = expanded_races.str.strip()
+
+    # Map to names
+    expanded_races_named = expanded_races.map(race_mapping)
+    race_counts = expanded_races_named.value_counts().reset_index()
+    race_counts.columns = ["Race", "Count"]
+
+    # Side-by-side bar charts: Race vs Hispanic
+    col1, col2 = st.columns(2)
+
+    with col1:
+        fig_race = px.bar(
+            race_counts,
+            x="Race",
+            y="Count",
+            color="Count",
+            title="Participants by Reported Child Race",
+            color_continuous_scale=[[0, NU_LIGHT_PURPLE], [1, NU_PURPLE]]
+        )
+        fig_race.update_layout(
+            title_font=dict(size=18, color=NU_PURPLE, family="Arial"),
+            xaxis_title="Race",
+            yaxis_title="Number of Participants",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color=NU_PURPLE),
+            xaxis_tickangle=-45
+        )
+        st.plotly_chart(fig_race, use_container_width=True)
+
+    with col2:
+        # Hard-coded Hispanic numbers
+        hispanic_counts = pd.DataFrame({
+            "Ethnicity": ["Hispanic / Latine", "Not Hispanic", "Unknown"],
+            "Count": [108, 315, 3]
+        })
+
+        fig_hispanic = px.bar(
+            hispanic_counts,
+            x="Ethnicity",
+            y="Count",
+            color="Count",
+            title="Participants by Hispanic / Latine Identification",
+            color_continuous_scale=[[0, NU_LIGHT_PURPLE], [1, NU_PURPLE]]
+        )
+        fig_hispanic.update_layout(
+            title_font=dict(size=18, color=NU_PURPLE, family="Arial"),
+            xaxis_title="Ethnicity",
+            yaxis_title="Number of Participants",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color=NU_PURPLE),
+            xaxis_tickangle=-30
+        )
+        st.plotly_chart(fig_hispanic, use_container_width=True)
+
+    # KPI cards for Hispanic data below the charts
+    col5, col6, col7 = st.columns(3)
+    with col5:
+        st.metric("Hispanic / Latine", "108")
+    with col6:
+        st.metric("Not Hispanic", "315")
+    with col7:
+        st.metric("Unknown / Not Reported", "3")
+# Rest of the code remains the same...
+# [Continue with the rest of your original code for Post-QC Feature Analysis and other sections]
+
 # Post-QC Feature Analysis with improved layout
 st.markdown('<div class="section-header"> Feature Analysis</div>', unsafe_allow_html=True)
 
-post_df = pd.read_excel("Post_qc_summary.xlsx", sheet_name="All_data")
+post_df = pd.read_excel("/projects/p32576/QC/Denoise_norm/Modified_file_name_fina/dashboard/Post_qc_summary.xlsx", sheet_name="All_data")
 
 post_df['CityCode'] = post_df['Segment File'].apply(lambda x: re.search(r'ds-([A-Z]{3})', str(x)).group(1) if re.search(r'ds-([A-Z]{3})', str(x)) else None)
 post_df['FileName'] = post_df['Segment File'].apply(lambda x: str(x).split("/")[-1])
@@ -420,19 +600,21 @@ if eligibility_columns:
     if len(eligibility_data) > 0:
         # Create eligibility status mapping for colors
         eligibility_colors = {
-            'Eligible': '#2E8B57',      # Sea green
-            'Not Eligible': '#DC143C',   # Crimson
-            'Pass': '#2E8B57',          # Sea green
-            'Fail': '#DC143C',          # Crimson
-            'True': '#2E8B57',          # Sea green
-            'False': '#DC143C',         # Crimson
-            '1': '#2E8B57',             # Sea green
-            '0': '#DC143C',             # Crimson
-            1: '#2E8B57',               # Sea green
-            0: '#DC143C',               # Crimson
-            True: '#2E8B57',            # Sea green
-            False: '#DC143C',           # Crimson
-            'Pending': '#FF8C00',       # Dark orange
+            'Yes': '#2E8B57',           # Green
+            'No': '#DC143C',            # Red
+            'Eligible': '#2E8B57',
+            'Not Eligible': '#DC143C',
+            'Pass': '#2E8B57',
+            'Fail': '#DC143C',
+            'True': '#2E8B57',
+            'False': '#DC143C',
+            '1': '#2E8B57',
+            '0': '#DC143C',
+            1: '#2E8B57',
+            0: '#DC143C',
+            True: '#2E8B57',
+            False: '#DC143C',
+            'Pending': '#FF8C00',
             'Under Review': NU_LIGHT_PURPLE
         }
         
@@ -465,7 +647,7 @@ if eligibility_columns:
                 fig_eligibility.update_layout(
                     title_font=dict(size=18, color=NU_PURPLE, family="Arial"),
                     xaxis_title="Sample Index",
-                    yaxis_title="All Features",  
+                    yaxis_title="All Features",  # Renamed y-axis as requested
                     plot_bgcolor='rgba(0,0,0,0)',
                     paper_bgcolor='rgba(0,0,0,0)',
                     font=dict(color=NU_PURPLE),
@@ -562,14 +744,10 @@ if eligibility_columns:
             eligibility_rate = (eligible_count / total_samples) * 100 if total_samples > 0 else 0
             st.metric("Eligibility Rate", f"90.1%")
         
-        # Debug information - you can remove this once the issue is resolved
-        st.expander("Debug Information - Eligibility Values").write({
-            "Unique eligibility values": eligibility_data[eligibility_col].value_counts().to_dict(),
-            "Data types": str(eligibility_data[eligibility_col].dtype),
-            "Sample values": eligibility_data[eligibility_col].head(10).tolist()
-        })
+     
         
-        
+        # Rest of the code remains the same...
+        # Eligibility by City Analysis
         st.markdown('<div style="margin-top: 2rem;"><h4 style="color: ' + NU_PURPLE + ';">Eligibility Distribution by City</h4></div>', unsafe_allow_html=True)
         
         city_eligibility = eligibility_data.groupby(['City', 'Eligibility_Status']).size().reset_index(name='Count')
@@ -607,11 +785,11 @@ if eligibility_columns:
             
             # Add status emoji
             if str(status).lower() in ['eligible', 'pass', 'true', '1']:
-                status_emoji = "✅"
+                status_emoji = ""
             elif str(status).lower() in ['not eligible', 'fail', 'false', '0']:
-                status_emoji = "❌"
+                status_emoji = ""
             else:
-                status_emoji = "⚠️"
+                status_emoji = ""
             
             eligibility_summary.append({
                 'Status': f"{status_emoji} {status}",
