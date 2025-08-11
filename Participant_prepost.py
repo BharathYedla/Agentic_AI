@@ -123,7 +123,7 @@ st.markdown(f"""
 # Load participant data
 @st.cache_data
 def load_data():
-    df = pd.read_csv("/projects/p32576/QC/Denoise_norm/Modified_file_name_fina/dashboard/participants.tsv", sep="\t")
+    df = pd.read_csv("participants.tsv", sep="\t")
     
     # Extract city code (first 3 letters) and participant ID (full ID)
     df["city_code"] = df["id_number"].astype(str).apply(lambda x: re.match(r"([A-Z]+)", x).group(1) if re.match(r"([A-Z]+)", x) else None)
@@ -479,7 +479,7 @@ if "ss_child_race" in df.columns:
 # Post-QC Feature Analysis with improved layout
 st.markdown('<div class="section-header"> Feature Analysis</div>', unsafe_allow_html=True)
 
-post_df = pd.read_excel("/projects/p32576/QC/Denoise_norm/Modified_file_name_fina/dashboard/Post_qc_summary.xlsx", sheet_name="All_data")
+post_df = pd.read_excel("Post_qc_summary.xlsx", sheet_name="All_data")
 
 post_df['CityCode'] = post_df['Segment File'].apply(lambda x: re.search(r'ds-([A-Z]{3})', str(x)).group(1) if re.search(r'ds-([A-Z]{3})', str(x)) else None)
 post_df['FileName'] = post_df['Segment File'].apply(lambda x: str(x).split("/")[-1])
