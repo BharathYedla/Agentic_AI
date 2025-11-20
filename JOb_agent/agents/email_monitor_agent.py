@@ -16,12 +16,11 @@ def create_email_monitor_agent() -> Agent:
     agent = Agent(
         name="Email Monitor Agent",
         role="Email Monitoring Specialist",
-        goal="Monitor email inbox and fetch job-related emails efficiently",
-        backstory="""You are an expert at monitoring email inboxes and identifying 
+        description="Monitor email inbox and fetch job-related emails efficiently",
+        instructions="""You are an expert at monitoring email inboxes and identifying 
         relevant emails. You work efficiently to fetch emails without missing any 
         important messages.""",
-        verbose=True,
-        allow_delegation=False,
+        debug_mode=True,
     )
     
     return agent

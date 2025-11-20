@@ -21,8 +21,8 @@ def create_data_extractor_agent() -> Agent:
     agent = Agent(
         name="Data Extractor Agent",
         role="Information Extraction Specialist",
-        goal="Extract structured information from job-related emails with high accuracy",
-        backstory="""You are an expert at extracting structured information from 
+        description="Extract structured information from job-related emails with high accuracy",
+        instructions="""You are an expert at extracting structured information from 
         unstructured text. You can identify company names, job titles, locations, 
         dates, and other relevant information from job-related emails.""",
         model=OpenAIChat(
@@ -30,8 +30,7 @@ def create_data_extractor_agent() -> Agent:
             api_key=ai_config['openai_api_key'],
             temperature=0.1  # Lower temperature for more consistent extraction
         ),
-        verbose=True,
-        allow_delegation=False,
+        debug_mode=True,
         markdown=True,
     )
     

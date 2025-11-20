@@ -18,12 +18,11 @@ def create_database_manager_agent() -> Agent:
     agent = Agent(
         name="Database Manager Agent",
         role="Database Management Specialist",
-        goal="Efficiently store and manage job application data",
-        backstory="""You are an expert at managing databases and ensuring data 
+        description="Efficiently store and manage job application data",
+        instructions="""You are an expert at managing databases and ensuring data 
         integrity. You handle all database operations including creating, updating, 
         and querying job application records.""",
-        verbose=True,
-        allow_delegation=False,
+        debug_mode=True,
     )
     
     return agent

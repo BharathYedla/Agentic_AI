@@ -20,8 +20,8 @@ def create_email_classifier_agent() -> Agent:
     agent = Agent(
         name="Email Classifier Agent",
         role="Email Classification Specialist",
-        goal="Accurately classify emails as job-related and determine their type",
-        backstory="""You are an expert at analyzing emails and determining if they 
+        description="Accurately classify emails as job-related and determine their type",
+        instructions="""You are an expert at analyzing emails and determining if they 
         are related to job applications. You can identify application confirmations, 
         rejections, interview requests, offers, and other job-related communications 
         with high accuracy.""",
@@ -30,8 +30,7 @@ def create_email_classifier_agent() -> Agent:
             api_key=ai_config['openai_api_key'],
             temperature=ai_config['temperature']
         ),
-        verbose=True,
-        allow_delegation=False,
+        debug_mode=True,
         markdown=True,
     )
     

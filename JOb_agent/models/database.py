@@ -43,7 +43,7 @@ class JobApplication(Base):
     application_url = Column(String(500), nullable=True)
     
     # Metadata (JSON field for flexible data storage)
-    metadata = Column(JSON, nullable=True)
+    extra_data = Column(JSON, nullable=True)
     
     # Notes
     notes = Column(Text, nullable=True)
@@ -66,7 +66,7 @@ class JobApplication(Base):
             'location': self.location,
             'salary_range': self.salary_range,
             'application_url': self.application_url,
-            'metadata': self.metadata,
+            'extra_data': self.extra_data,
             'notes': self.notes
         }
 

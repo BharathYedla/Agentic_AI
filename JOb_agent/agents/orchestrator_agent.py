@@ -19,12 +19,11 @@ def create_orchestrator_agent() -> Agent:
     agent = Agent(
         name="Orchestrator Agent",
         role="Workflow Coordination Specialist",
-        goal="Coordinate all agents to efficiently process job application emails",
-        backstory="""You are an expert at coordinating complex workflows. You 
+        description="Coordinate all agents to efficiently process job application emails",
+        instructions="""You are an expert at coordinating complex workflows. You 
         manage the entire job tracking pipeline, ensuring each agent performs 
         its task efficiently and data flows smoothly between agents.""",
-        verbose=True,
-        allow_delegation=True,
+        debug_mode=True,
     )
     
     return agent
