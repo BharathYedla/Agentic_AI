@@ -27,19 +27,26 @@ struct MainTabView: View {
                 }
                 .tag(1)
             
+            // Jobs Tab - NEW!
+            JobsView()
+                .tabItem {
+                    Label("Jobs", systemImage: selectedTab == 2 ? "briefcase.fill" : "briefcase")
+                }
+                .tag(2)
+            
             // Analytics Tab
             AnalyticsView()
                 .tabItem {
-                    Label("Analytics", systemImage: selectedTab == 2 ? "chart.bar.fill" : "chart.bar")
+                    Label("Analytics", systemImage: selectedTab == 3 ? "chart.bar.fill" : "chart.bar")
                 }
-                .tag(2)
+                .tag(3)
             
             // Profile Tab
             ProfileView()
                 .tabItem {
-                    Label("Profile", systemImage: selectedTab == 3 ? "person.fill" : "person")
+                    Label("Profile", systemImage: selectedTab == 4 ? "person.fill" : "person")
                 }
-                .tag(3)
+                .tag(4)
         }
         .accentColor(.blue)
         .onChange(of: selectedTab) { newValue in

@@ -32,9 +32,9 @@ class Settings(BaseSettings):
     REDIS_URL: str = Field(..., env="REDIS_URL")
     REDIS_CACHE_TTL: int = Field(default=3600, env="REDIS_CACHE_TTL")
     
-    # Celery
-    CELERY_BROKER_URL: str = Field(..., env="CELERY_BROKER_URL")
-    CELERY_RESULT_BACKEND: str = Field(..., env="CELERY_RESULT_BACKEND")
+    # Celery (Optional - for background tasks)
+    CELERY_BROKER_URL: Optional[str] = Field(default=None, env="CELERY_BROKER_URL")
+    CELERY_RESULT_BACKEND: Optional[str] = Field(default=None, env="CELERY_RESULT_BACKEND")
     
     # CORS
     CORS_ORIGINS: List[str] = Field(
@@ -48,10 +48,17 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",")]
         return v
     
-    # OpenAI
-    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
+    # OpenAI (Optional - for AI features)
+    OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     OPENAI_MODEL: str = Field(default="gpt-4o-mini", env="OPENAI_MODEL")
     OPENAI_TEMPERATURE: float = Field(default=0.3, env="OPENAI_TEMPERATURE")
+    
+    # External Job APIs
+    RAPIDAPI_KEY: Optional[str] = Field(default=None, env="RAPIDAPI_KEY")
+    SERPAPI_KEY: Optional[str] = Field(default=None, env="SERPAPI_KEY")
+    INDEED_PUBLISHER_ID: Optional[str] = Field(default=None, env="INDEED_PUBLISHER_ID")
+    CLEARBIT_API_KEY: Optional[str] = Field(default=None, env="CLEARBIT_API_KEY")
+    
     
     # Email Settings
     EMAIL_CHECK_INTERVAL: int = Field(default=3600, env="EMAIL_CHECK_INTERVAL")
@@ -96,7 +103,6 @@ def validate_settings():
         ("SECRET_KEY", settings.SECRET_KEY),
         ("DATABASE_URL", settings.DATABASE_URL),
         ("REDIS_URL", settings.REDIS_URL),
-        ("OPENAI_API_KEY", settings.OPENAI_API_KEY),
     ]
     
     missing = []

@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 import logging
 from datetime import datetime
 
-from api.routes import auth, applications, analytics, email_accounts, sync
+from api.routes import auth, applications, analytics, email_accounts, sync, simple_jobs
 from core.config import settings
 from core.database import engine, Base
 from core.logging_config import setup_logging
@@ -94,6 +94,7 @@ app.include_router(applications.router, prefix="/api/v1/applications", tags=["Ap
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(email_accounts.router, prefix="/api/v1/email-accounts", tags=["Email Accounts"])
 app.include_router(sync.router, prefix="/api/v1/sync", tags=["Sync"])
+app.include_router(simple_jobs.router, prefix="/api/v1/jobs", tags=["Jobs"])  # NEW: LinkedIn jobs
 
 
 # Global exception handler
