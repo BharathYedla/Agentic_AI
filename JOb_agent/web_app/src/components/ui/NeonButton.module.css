@@ -1,0 +1,75 @@
+.button {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+}
+
+.button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.button:hover::before {
+    left: 100%;
+}
+
+.button:hover {
+    background: var(--primary-glow);
+    box-shadow: 0 0 20px var(--primary-glow);
+    text-shadow: 0 0 8px var(--primary);
+}
+
+.primary {
+    background: var(--primary);
+    color: #000;
+    border: none;
+}
+
+.primary:hover {
+    background: #33EBFF;
+    box-shadow: 0 0 30px var(--primary-glow);
+    color: #000;
+    text-shadow: none;
+}
+
+.outline {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+}
+
+.outline:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+    box-shadow: none;
+    background: var(--bg-card-hover);
+}
+
+.ghost {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+}
+
+.ghost:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    box-shadow: none;
+}

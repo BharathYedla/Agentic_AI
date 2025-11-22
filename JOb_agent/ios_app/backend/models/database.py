@@ -141,7 +141,7 @@ class JobApplication(Base):
     recruiter_phone = Column(String(50), nullable=True)
     
     # Metadata
-    metadata = Column(JSON, default={})
+    meta_data = Column(JSON, default={})
     tags = Column(JSON, default=[])
     notes = Column(Text, nullable=True)
     
@@ -190,7 +190,7 @@ class EmailLog(Base):
     processing_time_ms = Column(Integer, nullable=True)
     
     # Metadata
-    metadata = Column(JSON, default={})
+    meta_data = Column(JSON, default={})
     
     # Relationships
     application = relationship("JobApplication", back_populates="emails")

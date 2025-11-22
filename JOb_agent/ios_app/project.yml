@@ -1,0 +1,36 @@
+name: JobTracker
+options:
+  bundleIdPrefix: com.jobtracker
+  deploymentTarget:
+    iOS: 17.0
+targets:
+  JobTracker:
+    type: application
+    platform: iOS
+    sources:
+      - path: JobTracker
+    settings:
+      base:
+        INFOPLIST_FILE: JobTracker/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.jobtracker.app
+        DEVELOPMENT_TEAM: ""
+        ENABLE_PREVIEWS: YES
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: 1,2
+        INFOPLIST_KEY_NSAppTransportSecurity: 
+          NSAllowsArbitraryLoads: true
+schemes:
+  JobTracker:
+    build:
+      targets:
+        JobTracker: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
