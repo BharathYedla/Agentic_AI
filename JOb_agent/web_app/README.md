@@ -13,7 +13,7 @@ A high-production, AI-powered job tracking application built with Next.js 14, Fr
 ## 🛠 Tech Stack
 
 - **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
-- **Language**: TypeScript
+- **Language**: Type
 - **Styling**: CSS Modules (Vanilla CSS with Variables)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
 - **Icons**: [Lucide React](https://lucide.dev/)
@@ -38,18 +38,3 @@ The application uses a custom design system defined in `src/app/globals.css`.
 
 3.  **Open the app:**
     Visit [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 📂 Project Structure
-
-- `src/app`: Pages and layouts (App Router).
-- `src/components`: Reusable UI components.
-- `src/components/ui`: Generic UI elements (Buttons, Cards).
-- `src/app/globals.css`: Global styles and CSS variables.
-
-## 🤝 Contributing
-
-1.  Fork the repository.
-2.  Create a feature branch (`git checkout -b feature/amazing-feature`).
-3.  Commit your changes (`git commit -m 'Add amazing feature'`).
-4.  Push to the branch (`git push origin feature/amazing-feature`).
-5.  Open a Pull Request.
