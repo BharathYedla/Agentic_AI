@@ -3,13 +3,7 @@ import styles from './JobCard.module.css';
 import NeonButton from './ui/NeonButton';
 import { motion } from 'framer-motion';
 
-interface Job {
-    id: string;
-    title: string;
-    company: string;
-    matchScore?: number;
-    logo?: string;
-}
+import { Job } from '@/services/api';
 
 interface JobCardProps {
     job: Job;
@@ -24,7 +18,11 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
             whileHover={{ scale: 1.01 }}
         >
             <div className={styles.companyLogo}>
-                {job.company.substring(0, 2).toUpperCase()}
+                {job.company_logo ? (
+                    <img src={job.company_logo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                ) : (
+                    job.company.substring(0, 2).toUpperCase()
+                )}
             </div>
             <div className={styles.jobInfo}>
                 <h3 className={styles.jobTitle}>{job.title}</h3>
@@ -33,7 +31,7 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
 
             <div className={styles.matchScore}>
                 <div className={styles.scoreRing}>
-                    {job.matchScore}%
+                    {job.match_score || 0}%
                 </div>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Match</span>
             </div>

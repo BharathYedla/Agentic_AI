@@ -10,6 +10,7 @@ export interface Job {
     posted_at?: string;
     source: string;
     match_score?: number;
+    company_logo?: string;
 }
 
 export interface Application {

@@ -170,6 +170,35 @@ async def get_company_logo(
     }
 
 
+@router.get("/{job_id}")
+async def get_job_details(job_id: str):
+    """
+    Get job details by ID
+    For now, returns mock data or searches if possible
+    """
+    # Check mock data first
+    mock_jobs = _get_mock_jobs("iOS Developer", "San Francisco, CA")
+    for job in mock_jobs:
+        if job["id"] == job_id:
+            return job
+            
+    # If not in mock, return a generic mock for testing UI
+    return {
+        "id": job_id,
+        "title": "Senior Software Engineer",
+        "company": "Tech Giant Corp",
+        "location": "San Francisco, CA",
+        "description": "This is a detailed description of the job. We are looking for a talented engineer to join our team. You will be working on cutting-edge technologies and solving complex problems.\n\nResponsibilities:\n- Design and build scalable systems\n- Collaborate with cross-functional teams\n- Write clean, maintainable code\n\nRequirements:\n- 5+ years of experience\n- Proficiency in Python and React\n- Strong problem-solving skills",
+        "url": "https://example.com",
+        "posted_at": "2023-10-05T10:00:00Z",
+        "source": "mock_detail",
+        "match_score": 88,
+        "company_logo": "https://logo.clearbit.com/google.com",
+        "skills": ["Python", "React", "AWS", "System Design"],
+        "benefits": ["Competitive Salary", "Health Insurance", "Remote Work", "Stock Options"]
+    }
+
+
 @router.post("/{job_id}/save")
 async def save_job(job_id: str):
     """Save a job (placeholder - implement with database)"""

@@ -83,7 +83,8 @@ export default function ApplicationsPage() {
                                             id: app.id.toString(),
                                             title: app.role_title,
                                             company: app.company_name,
-                                            matchScore: 0 // TODO: Add match score to application model
+                                            match_score: 0, // TODO: Add match score to application model
+                                            source: 'application'
                                         }} />
                                     </motion.div>
                                 ))}
