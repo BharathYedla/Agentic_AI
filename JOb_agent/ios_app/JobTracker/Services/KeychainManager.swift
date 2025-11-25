@@ -1,103 +1,47 @@
-//
-//  KeychainManager.swift
-//  JobTracker
-//
-//  Secure keychain storage for tokens and sensitive data
-//
-
 import Foundation
 import Security
 
 class KeychainManager {
     static let shared = KeychainManager()
     
-    private let service = "com.jobtracker.app"
-    
-    private enum Keys {
-        static let accessToken = "accessToken"
-        static let refreshToken = "refreshToken"
-    }
-    
     private init() {}
     
-    // MARK: - Access Token
-    
-    func saveAccessToken(_ token: String) {
-        save(token, forKey: Keys.accessToken)
-    }
-    
-    func getAccessToken() -> String? {
-        return get(forKey: Keys.accessToken)
-    }
-    
-    // MARK: - Refresh Token
-    
-    func saveRefreshToken(_ token: String) {
-        save(token, forKey: Keys.refreshToken)
-    }
-    
-    func getRefreshToken() -> String? {
-        return get(forKey: Keys.refreshToken)
-    }
-    
-    // MARK: - Clear Tokens
-    
-    func clearTokens() {
-        delete(forKey: Keys.accessToken)
-        delete(forKey: Keys.refreshToken)
-    }
-    
-    // MARK: - Generic Keychain Operations
-    
-    private func save(_ value: String, forKey key: String) {
-        guard let data = value.data(using: .utf8) else { return }
+    func save(_ data: Data, service: String, account: String) {
+        let query = [
+            kSecValueData: data,
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account
+        ] as CFDictionary
         
-        // Delete existing item if it exists
-        delete(forKey: key)
+        // Delete existing item
+        SecItemDelete(query)
         
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
-        ]
-        
-        let status = SecItemAdd(query as CFDictionary, nil)
-        
-        if status != errSecSuccess {
-            print("Keychain save error: \(status)")
-        }
+        // Add new item
+        SecItemAdd(query, nil)
     }
     
-    private func get(forKey key: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
+    func read(service: String, account: String) -> Data? {
+        let query = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+            kSecReturnData: true
+        ] as CFDictionary
         
         var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        SecItemCopyMatching(query, &result)
         
-        guard status == errSecSuccess,
-              let data = result as? Data,
-              let value = String(data: data, encoding: .utf8) else {
-            return nil
-        }
-        
-        return value
+        return result as? Data
     }
     
-    private func delete(forKey key: String) {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key
-        ]
+    func delete(service: String, account: String) {
+        let query = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account
+        ] as CFDictionary
         
-        SecItemDelete(query as CFDictionary)
+        SecItemDelete(query)
     }
 }

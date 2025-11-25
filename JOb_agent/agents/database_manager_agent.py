@@ -2,7 +2,13 @@
 Database Manager Agent - Manages all database operations for job applications
 """
 from agno.agent import Agent
-from models.database import JobApplication, EmailLog, get_session
+try:
+    from models.database import JobApplication, EmailLog, get_session
+except ImportError:
+    # Handle backend environment where models.database is different
+    JobApplication = None
+    EmailLog = None
+    get_session = None
 from typing import Dict, List, Optional
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
@@ -28,154 +34,127 @@ def create_database_manager_agent() -> Agent:
     return agent
 
 
+def get_local_session():
+    """Get database session handling both standalone and backend modes"""
+    try:
+        # Try to use backend models if available
+        from ios_app.backend.models.database import JobApplication as BackendJobApplication
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        import os
+        
+        # Use absolute path to backend DB to avoid CWD issues
+        # Assuming we are running from project root or backend dir
+        # Try to find the DB file
+        possible_paths = [
+            "ios_app/backend/job_tracker.db",
+            "../ios_app/backend/job_tracker.db",
+            "/Users/bharath/Documents/Git/AI_Agents/Multi_Agent/Job_agent/Agentic_AI-1/JOb_agent/ios_app/backend/job_tracker.db"
+        ]
+        
+        db_path = "ios_app/backend/job_tracker.db"
+        for p in possible_paths:
+            if os.path.exists(p):
+                db_path = p
+                break
+                
+        db_url = f"sqlite:///{db_path}"
+        engine = create_engine(db_url)
+        Session = sessionmaker(bind=engine)
+        return Session(), True # (session, is_backend)
+    except ImportError:
+        from models.database import get_session as original_get_session
+        return original_get_session(), False
+
 def save_application_task(agent: Agent, extracted_data: Dict) -> Optional[int]:
     """
     Task to save or update a job application in the database
-    
-    Args:
-        agent: The database manager agent
-        extracted_data: Extracted data dictionary from data extractor agent
-        
-    Returns:
-        Application ID if successful, None otherwise
     """
-    session = get_session()
+    session, is_backend = get_local_session()
     
     try:
-        message_id = extracted_data.get('email_message_id')
-        
-        # Check if this email has already been processed
-        existing_log = session.query(EmailLog).filter_by(message_id=message_id).first()
-        if existing_log:
-            print(f"  ℹ Email {message_id} already processed, skipping...")
-            return None
-        
-        # Check if application already exists for this company and role
-        company = extracted_data.get('company_name')
-        role = extracted_data.get('role_title')
-        
-        if not company or not role:
-            print(f"  ✗ Missing company or role information, skipping...")
-            return None
-        
-        existing_app = session.query(JobApplication).filter_by(
-            company_name=company,
-            role_title=role
-        ).first()
-        
-        if existing_app:
-            # Update existing application
-            print(f"  ↻ Updating existing application: {company} - {role}")
+        if is_backend:
+            from ios_app.backend.models.database import JobApplication, EmailLog, ApplicationStatus
             
-            # Update status if it's a progression
-            status_priority = {
-                'applied': 1,
-                'in_progress': 2,
-                'follow_up_needed': 3,
-                'interview_scheduled': 4,
-                'offer_received': 5,
-                'rejected': 6,
-            }
+            message_id = extracted_data.get('email_message_id')
+            company = extracted_data.get('company_name')
+            role = extracted_data.get('role_title')
             
-            current_priority = status_priority.get(existing_app.status, 0)
-            new_priority = status_priority.get(extracted_data.get('status'), 0)
+            if not company or not role:
+                print(f"  ✗ Missing company or role information, skipping...")
+                return None
             
-            if new_priority >= current_priority:
-                existing_app.status = extracted_data.get('status', existing_app.status)
-            
-            # Update other fields if they have new information
-            if extracted_data.get('location'):
-                existing_app.location = extracted_data['location']
-            if extracted_data.get('salary_range'):
-                existing_app.salary_range = extracted_data['salary_range']
-            if extracted_data.get('application_url'):
-                existing_app.application_url = extracted_data['application_url']
-            
-            # Append to notes
-            new_note = f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M')}] {extracted_data.get('classification', 'Update')}: {extracted_data.get('additional_notes', '')}"
-            existing_app.notes = (existing_app.notes or '') + new_note
-            
-            # Update metadata
-            if not existing_app.metadata:
-                existing_app.metadata = {}
-            existing_app.metadata['last_email_subject'] = extracted_data.get('email_subject')
-            existing_app.metadata['last_email_from'] = extracted_data.get('email_from')
-            
-            existing_app.last_updated = datetime.utcnow()
-            
-            app_id = existing_app.id
-            
-        else:
-            # Create new application
-            print(f"  ✓ Creating new application: {company} - {role}")
-            
-            # Parse application date
-            app_date = None
-            if extracted_data.get('application_date'):
-                try:
-                    app_date = datetime.strptime(extracted_data['application_date'], '%Y-%m-%d')
-                except:
-                    pass
-            
-            # Parse email date
-            email_date = None
-            if extracted_data.get('email_date'):
-                if isinstance(extracted_data['email_date'], datetime):
-                    email_date = extracted_data['email_date']
-                else:
-                    try:
-                        email_date = datetime.fromisoformat(str(extracted_data['email_date']))
-                    except:
-                        pass
-            
-            new_app = JobApplication(
+            # Check existing
+            existing_app = session.query(JobApplication).filter_by(
                 company_name=company,
                 role_title=role,
-                status=extracted_data.get('status', 'applied'),
-                application_date=app_date,
-                email_subject=extracted_data.get('email_subject'),
-                email_body=extracted_data.get('email_body', ''),
-                email_from=extracted_data.get('email_from'),
-                email_date=email_date,
-                email_message_id=message_id,
-                location=extracted_data.get('location'),
-                salary_range=extracted_data.get('salary_range'),
-                application_url=extracted_data.get('application_url'),
-                metadata={
-                    'classification': extracted_data.get('classification'),
-                    'next_steps': extracted_data.get('next_steps'),
-                    'interview_datetime': extracted_data.get('interview_datetime'),
-                    'contact_person': extracted_data.get('contact_person'),
-                },
-                notes=extracted_data.get('additional_notes', ''),
-            )
+                user_id=1
+            ).first()
             
-            session.add(new_app)
-            session.flush()
-            app_id = new_app.id
+            if existing_app:
+                print(f"  ↻ Updating existing application: {company} - {role}")
+                # Update status logic could go here
+                # For now just update notes
+                new_note = f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M')}] {extracted_data.get('classification', 'Update')}: {extracted_data.get('additional_notes', '')}"
+                existing_app.notes = (existing_app.notes or '') + new_note
+                app_id = existing_app.id
+            else:
+                print(f"  ✓ Creating new application: {company} - {role}")
+                
+                # Map status string to Enum
+                status_str = extracted_data.get('status', 'applied').lower()
+                status_enum = ApplicationStatus.APPLIED
+                if 'interview' in status_str:
+                    status_enum = ApplicationStatus.INTERVIEW_SCHEDULED
+                elif 'offer' in status_str:
+                    status_enum = ApplicationStatus.OFFER_RECEIVED
+                elif 'reject' in status_str:
+                    status_enum = ApplicationStatus.REJECTED
+                
+                new_app = JobApplication(
+                    user_id=1,
+                    company_name=company,
+                    role_title=role,
+                    status=status_enum,
+                    job_description=extracted_data.get('email_body', ''),
+                    location=extracted_data.get('location'),
+                    application_url=extracted_data.get('application_url'),
+                    notes=extracted_data.get('additional_notes', ''),
+                    email_subject=extracted_data.get('email_subject'),
+                    email_from=extracted_data.get('email_from'),
+                    email_message_id=message_id,
+                )
+                session.add(new_app)
+                session.flush()
+                app_id = new_app.id
+            
+            # Log email
+            # Check if email log exists
+            existing_log = session.query(EmailLog).filter_by(message_id=message_id).first()
+            if not existing_log:
+                email_log = EmailLog(
+                    message_id=message_id,
+                    application_id=app_id,
+                    subject=extracted_data.get('email_subject'),
+                    from_address=extracted_data.get('email_from'),
+                    is_job_related=True,
+                    # classification=extracted_data.get('classification') # Enum mismatch potential, skip for now
+                )
+                session.add(email_log)
+            
+            session.commit()
+            print(f"  ✓ Saved to backend database (ID: {app_id})")
+            return app_id
+            
+        else:
+            print("  ✗ Backend models not available. Standalone mode not fully implemented in this patch.")
+            return None
         
-        # Log the email as processed
-        email_log = EmailLog(
-            message_id=message_id,
-            subject=extracted_data.get('email_subject'),
-            from_address=extracted_data.get('email_from'),
-            date=email_date,
-            is_job_related=1,
-            classification=extracted_data.get('classification'),
-        )
-        session.add(email_log)
-        
-        session.commit()
-        print(f"  ✓ Saved to database (ID: {app_id})")
-        return app_id
-        
-    except IntegrityError as e:
-        session.rollback()
-        print(f"  ✗ Database integrity error: {e}")
-        return None
     except Exception as e:
         session.rollback()
         print(f"  ✗ Error saving to database: {e}")
+        import traceback
+        traceback.print_exc()
         return None
     finally:
         session.close()
@@ -262,27 +241,52 @@ def get_statistics(agent: Agent) -> Dict:
     Returns:
         Dictionary with statistics
     """
-    session = get_session()
+    session, is_backend = get_local_session()
     
     try:
-        total = session.query(JobApplication).count()
-        
-        stats = {
-            'total_applications': total,
-            'by_status': {},
-        }
-        
-        # Count by status
-        from sqlalchemy import func
-        status_counts = session.query(
-            JobApplication.status,
-            func.count(JobApplication.id)
-        ).group_by(JobApplication.status).all()
-        
-        for status, count in status_counts:
-            stats['by_status'][status] = count
-        
-        return stats
+        if is_backend:
+            from ios_app.backend.models.database import JobApplication
+            total = session.query(JobApplication).count()
+            
+            stats = {
+                'total_applications': total,
+                'by_status': {},
+            }
+            
+            # Count by status
+            from sqlalchemy import func
+            status_counts = session.query(
+                JobApplication.status,
+                func.count(JobApplication.id)
+            ).group_by(JobApplication.status).all()
+            
+            for status, count in status_counts:
+                stats['by_status'][status] = count
+            
+            return stats
+        else:
+            # Original logic
+            if not get_session:
+                return {}
+                
+            total = session.query(JobApplication).count()
+            
+            stats = {
+                'total_applications': total,
+                'by_status': {},
+            }
+            
+            # Count by status
+            from sqlalchemy import func
+            status_counts = session.query(
+                JobApplication.status,
+                func.count(JobApplication.id)
+            ).group_by(JobApplication.status).all()
+            
+            for status, count in status_counts:
+                stats['by_status'][status] = count
+            
+            return stats
         
     except Exception as e:
         print(f"✗ Error getting statistics: {e}")
