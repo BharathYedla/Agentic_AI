@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import styles from './page.module.css';
 import GlassCard from '@/components/ui/GlassCard';
 import NeonButton from '@/components/ui/NeonButton';
-import { ArrowRight, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowRight, Clock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { api, DashboardStats } from '@/services/api';
 import Link from 'next/link';
@@ -13,22 +13,50 @@ export default function Home() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const loadStats = async () => {
+    try {
+      const data = await api.getDashboardStats();
+      setStats(data);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load dashboard data. Is the backend running?');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const data = await api.getDashboardStats();
-        setStats(data);
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load dashboard data. Is the backend running?');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadStats();
   }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await api.triggerSync();
+
+      // Poll for status
+      const interval = setInterval(async () => {
+        try {
+          const status = await api.getSyncStatus();
+          if (!status.is_running) {
+            clearInterval(interval);
+            setSyncing(false);
+            loadStats(); // Reload data when done
+          }
+        } catch (e) {
+          console.error("Error polling sync status", e);
+          clearInterval(interval);
+          setSyncing(false);
+        }
+      }, 2000);
+
+    } catch (err) {
+      console.error(err);
+      setSyncing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -73,11 +101,21 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
         >
-          <Link href="/jobs">
-            <NeonButton icon={<ArrowRight size={20} />}>
-              Get Started
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+            <Link href="/jobs">
+              <NeonButton icon={<ArrowRight size={20} />}>
+                Get Started
+              </NeonButton>
+            </Link>
+            <NeonButton
+              variant="outline"
+              icon={<RefreshCw size={20} className={syncing ? "animate-spin" : ""} />}
+              onClick={handleSync}
+              disabled={syncing}
+            >
+              {syncing ? 'Syncing...' : 'Sync Emails'}
             </NeonButton>
-          </Link>
+          </div>
         </motion.div>
       </section>
 

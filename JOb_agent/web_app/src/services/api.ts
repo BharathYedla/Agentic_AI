@@ -81,5 +81,25 @@ export const api = {
         const res = await fetch(`${API_BASE_URL}/analytics/dashboard`);
         if (!res.ok) throw new Error('Failed to fetch dashboard stats');
         return res.json();
+    },
+
+    // Sync
+    async triggerSync(): Promise<{ message: string, status: string }> {
+        const res = await fetch(`${API_BASE_URL}/sync/run`, {
+            method: 'POST',
+        });
+        if (!res.ok) {
+            if (res.status === 409) {
+                throw new Error('Sync already in progress');
+            }
+            throw new Error('Failed to trigger sync');
+        }
+        return res.json();
+    },
+
+    async getSyncStatus(): Promise<{ is_running: boolean, last_status: string }> {
+        const res = await fetch(`${API_BASE_URL}/sync/`);
+        if (!res.ok) throw new Error('Failed to get sync status');
+        return res.json();
     }
 };
