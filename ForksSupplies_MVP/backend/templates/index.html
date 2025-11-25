@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForksSupplies Control Tower</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            text: '#f8fafc'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Fallback */
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: sans-serif;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-dark-bg text-dark-text min-h-screen font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span
+                            class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-purple-500">
+                            ForksSupplies
+                        </span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="#"
+                                class="px-3 py-2 rounded-md text-sm font-medium text-white bg-brand-600 hover:bg-brand-500 transition-colors">Dashboard</a>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button onclick="logout()"
+                        class="bg-slate-800 p-2 rounded-full text-slate-400 hover:text-white focus:outline-none">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+
+        <!-- Header -->
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="flex-1 min-w-0">
+                <h2 class="text-2xl font-bold leading-7 text-white sm:text-3xl sm:truncate">
+                    Control Tower
+                </h2>
+                <p class="mt-1 text-sm text-slate-400">
+                    Real-time network visibility & agentic resolution.
+                </p>
+            </div>
+            <div class="mt-4 flex md:mt-0 md:ml-4">
+                <button onclick="fetchAgentAnalysis()" type="button"
+                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-brand-500 transition-all shadow-lg shadow-brand-500/20">
+                    Run Agent Analysis
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            <!-- Active Shipments -->
+            <div class="glass overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-slate-400 truncate">Active Shipments</dt>
+                                <dd>
+                                    <div class="text-lg font-medium text-white" id="stat-shipments">Loading...</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Critical Delays -->
+            <div class="glass overflow-hidden shadow rounded-lg border-l-4 border-red-500">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-slate-400 truncate">Critical Delays</dt>
+                                <dd>
+                                    <div class="text-lg font-medium text-white" id="stat-delays">0</div>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Alerts Section -->
+        <div id="agent-alerts" class="mb-8 hidden">
+            <h3 class="text-lg leading-6 font-medium text-white mb-4">Agent Recommendations</h3>
+            <div class="bg-red-900/20 border border-red-500/50 rounded-lg p-4" id="alert-container">
+                <!-- Alerts injected here -->
+            </div>
+        </div>
+
+        <!-- Shipments Table -->
+        <div class="glass rounded-lg shadow overflow-hidden">
+            <div class="px-4 py-5 sm:px-6 border-b border-slate-700">
+                <h3 class="text-lg leading-6 font-medium text-white">Live Shipments</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-800">
+                        <tr>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                ID</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Status</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Location</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                ETA</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-slate-800/50 divide-y divide-slate-700" id="shipments-table">
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Auth Check
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        async function fetchShipments() {
+            try {
+                const response = await fetch('/api/shipments', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch');
+                const data = await response.json();
+
+                // Update Stats
+                document.getElementById('stat-shipments').textContent = data.length;
+
+                // Render Table
+                const tbody = document.getElementById('shipments-table');
+                tbody.innerHTML = '';
+                data.forEach(shipment => {
+                    const statusColor = shipment.status === 'DELAYED' ? 'text-red-400' : 'text-green-400';
+                    const row = `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${shipment.shipment_id}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusColor}">${shipment.status}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">${shipment.current_location}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">${new Date(shipment.eta_revised).toLocaleString()}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function fetchAgentAnalysis() {
+            try {
+                const response = await fetch('/api/agent/analyze', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const alerts = await response.json();
+
+                const container = document.getElementById('agent-alerts');
+                const alertBox = document.getElementById('alert-container');
+
+                if (alerts.length > 0) {
+                    container.classList.remove('hidden');
+                    document.getElementById('stat-delays').textContent = alerts.length;
+
+                    alertBox.innerHTML = alerts.map(alert => `
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-lg font-bold text-white">Alert: ${alert.shipment_id} (${alert.customer})</h4>
+                                <p class="text-sm text-red-200 mt-1">${alert.impact}</p>
+                                <p class="text-sm text-slate-300 mt-2 italic">"${alert.delay_reason}"</p>
+                                <div class="mt-4 bg-slate-800 p-3 rounded border border-slate-600">
+                                    <p class="text-sm font-mono text-brand-500">${alert.resolution_proposal}</p>
+                                    <button class="mt-2 px-3 py-1 bg-brand-600 text-white text-xs rounded hover:bg-brand-500">Approve Action</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Initial Load
+        fetchShipments();
+    </script>
+</body>
+
+</html>
