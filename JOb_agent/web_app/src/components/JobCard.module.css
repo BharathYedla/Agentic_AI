@@ -29,6 +29,8 @@
     font-weight: 700;
     color: var(--text-primary);
     margin-right: 16px;
+    position: relative;
+    overflow: hidden;
 }
 
 .jobInfo {

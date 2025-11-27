@@ -18,7 +18,7 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.01 }}
         >
-            <div className={styles.companyLogo} style={{ position: 'relative' }}>
+            <div className={styles.companyLogo}>
                 {job.company_logo ? (
                     <Image
                         src={job.company_logo}
