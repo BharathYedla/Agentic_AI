@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export interface Job {
     id: string;
@@ -38,52 +38,89 @@ export interface DashboardStats {
     recent_activity: Application[];
 }
 
+/**
+ * API service for interacting with the backend.
+ */
 export const api = {
-    // Jobs
+    /**
+     * Check if the backend is reachable.
+     */
+    async healthCheck(): Promise<boolean> {
+        try {
+            const res = await fetch(`${API_BASE_URL}/health`);
+            return res.ok;
+        } catch {
+            return false;
+        }
+    },
+
+    // --- Jobs ---
+
+    /**
+     * Search for jobs based on keywords and optional location.
+     */
     async searchJobs(keywords: string, location?: string): Promise<{ jobs: Job[], total: number }> {
         const params = new URLSearchParams({ keywords });
         if (location) params.append('location', location);
 
         const res = await fetch(`${API_BASE_URL}/jobs/search?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed to fetch jobs');
+        if (!res.ok) throw new Error(`Failed to fetch jobs: ${res.statusText}`);
         return res.json();
     },
 
-    // Applications
+    // --- Applications ---
+
+    /**
+     * Fetch all tracked applications.
+     */
     async getApplications(): Promise<Application[]> {
         const res = await fetch(`${API_BASE_URL}/applications/`);
-        if (!res.ok) throw new Error('Failed to fetch applications');
+        if (!res.ok) throw new Error(`Failed to fetch applications: ${res.statusText}`);
         return res.json();
     },
 
+    /**
+     * Create a new application record.
+     */
     async createApplication(data: Partial<Application>): Promise<Application> {
         const res = await fetch(`${API_BASE_URL}/applications/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
-        if (!res.ok) throw new Error('Failed to create application');
+        if (!res.ok) throw new Error(`Failed to create application: ${res.statusText}`);
         return res.json();
     },
 
+    /**
+     * Update an existing application record.
+     */
     async updateApplication(id: number, data: Partial<Application>): Promise<Application> {
         const res = await fetch(`${API_BASE_URL}/applications/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
-        if (!res.ok) throw new Error('Failed to update application');
+        if (!res.ok) throw new Error(`Failed to update application: ${res.statusText}`);
         return res.json();
     },
 
-    // Analytics
+    // --- Analytics ---
+
+    /**
+     * Get dashboard statistics.
+     */
     async getDashboardStats(): Promise<DashboardStats> {
         const res = await fetch(`${API_BASE_URL}/analytics/dashboard`);
-        if (!res.ok) throw new Error('Failed to fetch dashboard stats');
+        if (!res.ok) throw new Error(`Failed to fetch dashboard stats: ${res.statusText}`);
         return res.json();
     },
 
-    // Sync
+    // --- Sync ---
+
+    /**
+     * Trigger the email sync process.
+     */
     async triggerSync(): Promise<{ message: string, status: string }> {
         const res = await fetch(`${API_BASE_URL}/sync/run`, {
             method: 'POST',
@@ -92,14 +129,17 @@ export const api = {
             if (res.status === 409) {
                 throw new Error('Sync already in progress');
             }
-            throw new Error('Failed to trigger sync');
+            throw new Error(`Failed to trigger sync: ${res.statusText}`);
         }
         return res.json();
     },
 
+    /**
+     * Get the current status of the sync process.
+     */
     async getSyncStatus(): Promise<{ is_running: boolean, last_status: string }> {
         const res = await fetch(`${API_BASE_URL}/sync/`);
-        if (!res.ok) throw new Error('Failed to get sync status');
+        if (!res.ok) throw new Error(`Failed to get sync status: ${res.statusText}`);
         return res.json();
     }
 };

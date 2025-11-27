@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import styles from './JobCard.module.css';
 import NeonButton from './ui/NeonButton';
 import { motion } from 'framer-motion';
@@ -17,9 +18,16 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.01 }}
         >
-            <div className={styles.companyLogo}>
+            <div className={styles.companyLogo} style={{ position: 'relative' }}>
                 {job.company_logo ? (
-                    <img src={job.company_logo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    <Image
+                        src={job.company_logo}
+                        alt={job.company}
+                        fill
+                        sizes="48px"
+                        style={{ objectFit: 'cover', borderRadius: '50%' }}
+                        unoptimized
+                    />
                 ) : (
                     job.company.substring(0, 2).toUpperCase()
                 )}

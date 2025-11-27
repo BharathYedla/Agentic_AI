@@ -13,12 +13,13 @@ export default function JobsPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('iOS Developer');
-    const [location, setLocation] = useState('');
+    // Location feature pending implementation
+    const [location] = useState('');
 
-    const searchJobs = async () => {
+    const performSearch = async (query: string, loc: string) => {
         setLoading(true);
         try {
-            const data = await api.searchJobs(searchQuery, location);
+            const data = await api.searchJobs(query, loc);
             setJobs(data.jobs);
         } catch (error) {
             console.error(error);
@@ -27,8 +28,12 @@ export default function JobsPage() {
         }
     };
 
+    const handleSearch = () => {
+        performSearch(searchQuery, location);
+    };
+
     useEffect(() => {
-        searchJobs();
+        performSearch('iOS Developer', '');
     }, []);
 
     return (
