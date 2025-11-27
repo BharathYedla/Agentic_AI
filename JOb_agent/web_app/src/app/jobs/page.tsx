@@ -48,12 +48,12 @@ export default function JobsPage() {
                         className={styles.searchInput}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && searchJobs()}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     />
                     <NeonButton
                         variant="ghost"
                         className={styles.searchButton}
-                        onClick={searchJobs}
+                        onClick={handleSearch}
                         disabled={loading}
                     >
                         {loading ? <Loader2 className="animate-spin" /> : 'Search'}
