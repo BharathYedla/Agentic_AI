@@ -4,7 +4,7 @@ Streamlit Dashboard for Job Application Tracker
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
+
 from datetime import datetime, timedelta
 from models.database import get_session, JobApplication, EmailLog
 from sqlalchemy import func
